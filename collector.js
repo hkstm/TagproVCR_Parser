@@ -308,7 +308,11 @@ function btoafix(string) {
     submit.server = "tagpro-amsterdam.koalabeast.com";
     submit.port = 9000;
     submit.finished = true;
-    console.log(JSON.stringify(submit))
+    var fs = require('fs');
+    fs.writeFile('./data/tagproeu.json', JSON.stringify(submit), (err) => {
+      if (err) throw err
+      console.log('The file has been saved!')
+    })
     // report({status: 'postGame', recording: complete, data: submit, upload: upload});
    }
   }
