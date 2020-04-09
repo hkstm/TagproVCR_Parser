@@ -206,10 +206,10 @@ function btoafix(string) {
    if(complete){
     var deadline = ((now - lastNow) * .06 >>> 0) + lastTime + Math.round(data.time * .06);
     timeLimit = Math.round(data.time / 15000) / 4;
-    console.log('timeLimit * 3600: ' + (timeLimit * 3600));
-    console.log('deadline: ' + deadline);
+    // console.log('timeLimit * 3600: ' + (timeLimit * 3600));
+    // console.log('deadline: ' + deadline);
     gameStart = deadline - timeLimit * 3600;
-    console.log('gameStart: ' + gameStart);
+    // console.log('gameStart: ' + gameStart);
     maxPlayerCount = currentPlayerCount;
     // report({status: 'inGame', recording: true, data: {server: server, port: port, date: now / 1000 >>> 0, timeLimit: timeLimit}});
    }
@@ -221,7 +221,7 @@ function btoafix(string) {
  
  function finalize(finished, upload)
  {
-   console.log('finalizing');
+  //  console.log('finalizing');
   var now = Date.now();
   if(unfinalized)
   {
@@ -237,9 +237,9 @@ function btoafix(string) {
     if(complete)
     {
      submit.timeLimit = timeLimit;
-     console.log('((now - lastNow) * .06 >>> 0) + lastTime: '+ ((now - lastNow) * .06 >>> 0) + lastTime);
-     console.log('minTime: ' + minTime);
-     console.log('gameStart: ' + gameStart);
+    //  console.log('((now - lastNow) * .06 >>> 0) + lastTime: '+ ((now - lastNow) * .06 >>> 0) + lastTime);
+    //  console.log('minTime: ' + minTime);
+    //  console.log('gameStart: ' + gameStart);
      submit.duration = Math.max(((now - lastNow) * .06 >>> 0) + lastTime, minTime) - gameStart;
      submit.map.marsballs = mapMarsballs;
      submit.map.width = mapDimensions[0];
@@ -309,12 +309,13 @@ function btoafix(string) {
       }
     }
 
-    console.log("duration" + submit.duration);
+    // console.log("duration" + submit.duration);
     submit.server = "tagpro-amsterdam.koalabeast.com";
     submit.port = 9000;
     submit.finished = true;
     var fs = require('fs');
-    fs.writeFile('./data/tagproeu.json', JSON.stringify(submit), (err) => {
+    var path = './data/tagproeu_' + new Date().toUTCString().replace(/[^A-Z0-9]+/ig, "_") + ".json";
+    fs.writeFile(path, JSON.stringify(submit), (err) => {
       if (err) throw err
       console.log('The file has been saved!');
       console.log(JSON.stringify(submit));
@@ -379,9 +380,9 @@ function btoafix(string) {
  };
 
  function tagprosocketonsplat(data){
-  console.log(JSON.stringify(data));
-  console.log(queuedSplats);
-  console.log(witness);
+  // console.log(JSON.stringify(data));
+  // console.log(queuedSplats);
+  // console.log(witness);
   if(witness) queuedSplats[data.t-1].push(data);
  };
 
@@ -553,14 +554,20 @@ function btoafix(string) {
   var doSomething = async () => {
     var iStart = 2;
     var prevObj = JSON.parse(lines[iStart-1]);
+    const performance = require('perf_hooks').performance;
+    var t0 = 0;
+    var t1 = 0;
     for (var i = iStart; i < lines.length; ++i) {
+      var t2 = performance.now(); 
       lines[i] = lines[i].trim();
       var obj = JSON.parse(lines[i]);
-      await sleep(obj['0'] - prevObj['0']);
+      var t3 = performance.now(); 
+      await sleep(obj['0'] - prevObj['0'] - (t1 - t0)*10 - (t3 - t2)*10);
+      t0 = performance.now(); 
       prevObj = obj;
       var data = new Object();
-      // var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'splat', 'p']; 
-      var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'p']; 
+      var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'splat', 'p']; 
+      // var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'p']; 
 
       if(socketlistens.includes(obj['1'])){
         // console.log('timestamp: ' + obj['0']);
@@ -577,6 +584,7 @@ function btoafix(string) {
         // console.log('did not find: ' + obj['1']);
       }
       // console.log('on line: ' + i + " of " + lines.length);
+      t1 = performance.now()
     }
     finalize();
   }
