@@ -206,7 +206,10 @@ function btoafix(string) {
    if(complete){
     var deadline = ((now - lastNow) * .06 >>> 0) + lastTime + Math.round(data.time * .06);
     timeLimit = Math.round(data.time / 15000) / 4;
+    console.log('timeLimit * 3600: ' + (timeLimit * 3600));
+    console.log('deadline: ' + deadline);
     gameStart = deadline - timeLimit * 3600;
+    console.log('gameStart: ' + gameStart);
     maxPlayerCount = currentPlayerCount;
     // report({status: 'inGame', recording: true, data: {server: server, port: port, date: now / 1000 >>> 0, timeLimit: timeLimit}});
    }
@@ -218,6 +221,7 @@ function btoafix(string) {
  
  function finalize(finished, upload)
  {
+   console.log('finalizing');
   var now = Date.now();
   if(unfinalized)
   {
@@ -233,8 +237,9 @@ function btoafix(string) {
     if(complete)
     {
      submit.timeLimit = timeLimit;
-     console.log(((now - lastNow) * .06 >>> 0) + lastTime);
-     console.log(minTime);
+     console.log('((now - lastNow) * .06 >>> 0) + lastTime: '+ ((now - lastNow) * .06 >>> 0) + lastTime);
+     console.log('minTime: ' + minTime);
+     console.log('gameStart: ' + gameStart);
      submit.duration = Math.max(((now - lastNow) * .06 >>> 0) + lastTime, minTime) - gameStart;
      submit.map.marsballs = mapMarsballs;
      submit.map.width = mapDimensions[0];
@@ -251,7 +256,7 @@ function btoafix(string) {
        {
         var events = '';
         var last = gameStart;
-        var concatenate = function()
+        var concatenate = function() 
         {
          var emptySize = 7;
          for(var i = 0, j = new Uint32Array(3);;)
@@ -311,7 +316,8 @@ function btoafix(string) {
     var fs = require('fs');
     fs.writeFile('./data/tagproeu.json', JSON.stringify(submit), (err) => {
       if (err) throw err
-      console.log('The file has been saved!')
+      console.log('The file has been saved!');
+      console.log(JSON.stringify(submit));
     })
     // report({status: 'postGame', recording: complete, data: submit, upload: upload});
    }
@@ -373,6 +379,9 @@ function btoafix(string) {
  };
 
  function tagprosocketonsplat(data){
+  console.log(JSON.stringify(data));
+  console.log(queuedSplats);
+  console.log(witness);
   if(witness) queuedSplats[data.t-1].push(data);
  };
 
@@ -535,22 +544,32 @@ function btoafix(string) {
  };
 
  function processVCR(filePath) {
-    var fs = require('fs');
-    var lines = fs.readFileSync(filePath).toString().split("\n");
-    for (var i = 2; i < lines.length; ++i) {
+  var fs = require('fs');
+  var lines = fs.readFileSync(filePath).toString().split("\n");
+  var sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+  }
+  
+  var doSomething = async () => {
+    var iStart = 2;
+    var prevObj = JSON.parse(lines[iStart-1]);
+    for (var i = iStart; i < lines.length; ++i) {
       lines[i] = lines[i].trim();
       var obj = JSON.parse(lines[i]);
+      await sleep(obj['0'] - prevObj['0']);
+      prevObj = obj;
       var data = new Object();
       // var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'splat', 'p']; 
       var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'p']; 
 
       if(socketlistens.includes(obj['1'])){
+        // console.log('timestamp: ' + obj['0']);
         if(obj['1'] === 'p') {
-          data.t = obj['0'];
+          // data.t = obj['0'];
           data.u = obj['2'];
         } else {
           data = obj['2'];
-          data.t = obj['0'];
+          // data.t = obj['0'];
         }
         // console.log('obj:' + JSON.stringify(obj));
         eval('tagprosocketon' + obj['1'] +"(data)");
@@ -558,9 +577,11 @@ function btoafix(string) {
         // console.log('did not find: ' + obj['1']);
       }
       // console.log('on line: ' + i + " of " + lines.length);
+    }
+    finalize();
   }
-  finalize();
+  doSomething()
 };
 
-processVCR("./data/W1_G1H1_TBC_TRR.ndjson"); 
-// processVCR("./data/W1_G2H1_TBC_TRR.ndjson");
+// processVCR("./data/W1_G1H1_TBC_TRR.ndjson"); 
+processVCR("./data/W1_G2H1_TBC_TRR.ndjson");
