@@ -1,4 +1,4 @@
-function btoafix(string) {
+function btoaPolyfill(string) {
   // base64 character set, plus padding character (=)
   var b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
 
@@ -243,10 +243,10 @@ function btoafix(string) {
      submit.duration = Math.max(((now - lastNow) * .06 >>> 0) + lastTime, minTime) - gameStart;
      submit.map.marsballs = mapMarsballs;
      submit.map.width = mapDimensions[0];
-     submit.map.tiles = btoafix(mapTiles);
+     submit.map.tiles = btoaPolyfill(mapTiles);
      submit.players = [];
-     submit.teams[0].splats = btoafix(splats[0].pad());
-     submit.teams[1].splats = btoafix(splats[1].pad());
+     submit.teams[0].splats = btoaPolyfill(splats[0].pad());
+     submit.teams[1].splats = btoaPolyfill(splats[1].pad());
      for(var id = 1; id <= lastPlayer; id++)
       if(id in players)
       {
@@ -302,7 +302,7 @@ function btoafix(string) {
         {
          auth: auth, name: name, flair: flair, degree: player.degree,
          score: player.score, points: player.points,
-         team: initialTeam, events: btoafix(events)
+         team: initialTeam, events: btoaPolyfill(events)
         });
        }
        for(var i in served) delete players[served[i]];
@@ -551,7 +551,7 @@ function btoafix(string) {
     return new Promise(resolve => setTimeout(resolve, milliseconds))
   }
   
-  var doSomething = async () => {
+  var processEvents = async () => {
     var iStart = 2;
     var prevObj = JSON.parse(lines[iStart-1]);
     const performance = require('perf_hooks').performance;
@@ -567,28 +567,56 @@ function btoafix(string) {
       prevObj = obj;
       var data = new Object();
       var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'splat', 'p']; 
-      // var socketlistens = ['groupId', 'map', 'teamNames', 'score', 'time', 'end', 'disconnect', 'object', 'playerLeft', 'p']; 
 
       if(socketlistens.includes(obj['1'])){
-        // console.log('timestamp: ' + obj['0']);
         if(obj['1'] === 'p') {
-          // data.t = obj['0'];
           data.u = obj['2'];
         } else {
           data = obj['2'];
-          // data.t = obj['0'];
         }
-        // console.log('obj:' + JSON.stringify(obj));
-        eval('tagprosocketon' + obj['1'] +"(data)");
-      } else {
-        // console.log('did not find: ' + obj['1']);
+        switch(obj['1']) {
+          case 'groupId':
+            tagprosocketongroupId(data);
+            break;
+          case 'map':
+            tagprosocketonmap(data);
+            break;
+          case 'teamNames':
+            tagprosocketonteamNames(data);
+            break;
+          case 'score':
+            tagprosocketonscore(data);
+            break;
+          case 'time':
+            tagprosocketontime(data);
+            break;
+          case 'end':
+            tagprosocketonend(data);
+            break;
+          case 'disconnect':
+            tagprosocketondisconnect(data);
+            break;
+          case 'object':
+            tagprosocketonobject(data);
+            break;
+          case 'playerLeft':
+            tagprosocketonplayerLeft(data);
+            break;
+          case 'splat':
+            tagprosocketonsplat(data);
+            break;           
+          case 'p':
+            tagprosocketonp(data);
+            break;
+          default:
+            console.log('Event not recognized');           
+        }
       }
-      // console.log('on line: ' + i + " of " + lines.length);
       t1 = performance.now()
     }
     finalize();
   }
-  doSomething()
+  processEvents()
 };
 
 // processVCR("./data/W1_G1H1_TBC_TRR.ndjson"); 
